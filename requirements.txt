@@ -1,0 +1,24 @@
+# MedStegViT — Python dependencies
+#
+# PyTorch with CUDA must be installed separately from https://pytorch.org/get-started/locally/
+# Example for CUDA 13.0 (RTX 50xx series):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
+#
+# For older GPUs (CUDA 11.8 / 12.1 / 12.4) replace cu130 with cu118 / cu121 / cu124.
+# CPU-only (no GPU training):
+#   pip install torch torchvision
+#
+# After installing PyTorch, install the rest:
+#   pip install -r requirements.txt
+
+torch>=2.5.0          # deep learning framework — install with CUDA (see above)
+
+numpy>=1.26.0         # numerical arrays
+matplotlib>=3.9.0     # training plots (BitAcc, PSNR, loss curves)
+Pillow>=10.0.0        # image I/O (PNG export, JPEG attack simulation)
+
+pydicom>=2.4.0        # reading DICOM (.dcm) files
+opencv-python>=4.9.0  # resizing X-ray images to 512×512
+
+PyYAML>=6.0           # loading cfg/default.yaml configuration
+reedsolo>=1.7.0       # Reed-Solomon error-correction codec
