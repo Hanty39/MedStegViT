@@ -225,7 +225,7 @@ MedStegViT/
 
 ## Configuration Reference
 
-See [`cfg/default.yaml`](cfg/default.yaml) for a fully commented list of all hyperparameters including loss weights, augmentation settings, LDPC code rates, and checkpoint options.
+See [`cfg/default.yaml`] for a fully commented list of all hyperparameters including loss weights, augmentation settings, LDPC code rates, and checkpoint options.
 
 ---
 
