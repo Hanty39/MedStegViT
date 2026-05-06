@@ -133,6 +133,15 @@ Checkpoints are saved to `checkpoints/`. The best model (highest validation BitA
 
 Training logs and plots are written to `graphs/`.
 
+### Pre-trained checkpoint
+
+A pre-trained checkpoint is available in [Releases](https://github.com/Hanty39/MedStegViT/releases/tag/v1.0).  
+Download [`ckpt_20260417_172607_best.pt`](https://github.com/Hanty39/MedStegViT/releases/download/v1.0/ckpt_20260417_172607_best.pt) (220 MB) and place it in the `checkpoints/` folder, then run:
+
+```bash
+python demo.py --checkpoint checkpoints/ckpt_20260417_172607_best.pt --rate 0.5
+```
+
 ---
 
 ## Demo / Inference
@@ -225,7 +234,7 @@ MedStegViT/
 
 ## Configuration Reference
 
-See [`cfg/default.yaml`] for a fully commented list of all hyperparameters including loss weights, augmentation settings, LDPC code rates, and checkpoint options.
+See [`cfg/default.yaml`](cfg/default.yaml) for a fully commented list of all hyperparameters including loss weights, augmentation settings, LDPC code rates, and checkpoint options.
 
 ---
 
