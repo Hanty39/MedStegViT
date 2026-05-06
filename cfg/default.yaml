@@ -1,0 +1,126 @@
+# =============================================================================
+# default.yaml — Konfigurační soubor pro MedStegViT
+#
+# Všechny hyperparametry tréninku jsou zde centralizovány.
+# =============================================================================
+
+data:
+  base_dir: "data/raw_dicom"  # kořenová složka s DICOM daty;
+                               # očekává podsložky /train a /test
+  image_size: 512              # rozlišení snímků — všechny .dcm soubory se
+                               # přeškálují na 512×512 pixelů (dicom_loader.py)
+  n_train: 5070                # počet tréninkových snímků které se načtou;
+                               # 0 = načti všechny dostupné
+  n_test: 0                    # počet testovacích snímků pro finální evaluaci;
+                               # 0 = načti všechny dostupné (1377 snímků)
+  val_split: 0.15              # podíl tréninkových snímků vyčleněných pro validaci;
+                               # 0.15 = 15 % → z 5000 snímků = 750 val, 4250 train
+  seed: 0                      # seed pro reprodukovatelný náhodný výběr snímků;
+                               # -1 = pokaždé jiný výběr
+
+payload:
+  hash_type: "sha256"          # typ hashovací funkce pro PatientID → SHA-256
+  hash_bits: 256               # délka hashe v bitech (SHA-256 = 256 bitů = 32 bajtů)
+  rs_n: 64                     # celková délka Reed-Solomon kódového slova v bajtech
+                               # (32 datových + 32 opravných bajtů)
+  rs_k: 32                     # počet datových bajtů (bez opravných);
+  payload_bits: 512            # výsledná délka payloadu v bitech (rs_n × 8 = 64 × 8 = 512);
+                               # toto je počet bitů které encoder vkládá do každého snímku
+  embedding_dim: 256           # dimenze embeddingů ve ViT transformeru (šířka tokenů);
+                               # větší = výkonnější ale pomalejší
+
+model:
+  cnn_channels: [1, 32, 64, 128]  # kanály CNN vrstev
+  patch_size: 8                    # velikost jednoho patche v pixelech pro ViT;
+  vit_layers: 6                    # počet Transformer bloků v encoderu i decoderu;
+  vit_heads: 4                     # počet attention hlaviček v každém Transformer bloku;
+  vit_mlp_dim: 768                 # dimenze skryté vrstvy MLP uvnitř každého Transformer bloku;
+  dropout: 0.2                     # pravděpodobnost dropout regularizace (20 %);
+  se_channels: 32                  # počet kanálů v StructureExtractor (SE) síti;
+  border_px: 20                    # (legacy) šířka okraje v pixelech — původně se
+  delta_scale: 0.5                  # škálovací faktor perturbace před přičtením ke snímku;
+                                   # stego = img + delta * delta_scale
+                                   # 0.5 = ověřená hodnota — clamp místo sigmoid už sám o sobě
+                                   # odstraní 2-4× zesílení perturbací v jasných/tmavých pixelech
+
+checkpoints:
+  save_checkpoint: true            # true = ukládej checkpointy během tréninku
+  load_checkpoint: ""               # "" = trénink od nuly
+  checkpoint_interval: 5          # každých 5 epoch uloží periodický checkpoint
+                                   # (kromě best checkpointu který se ukládá při zlepšení)
+
+training:
+  total_epochs: 50                 # celkový počet epoch tréninku;
+                                   # 50 epoch × 4250 snímků = 212,500 kroků
+  learning_rate: 0.0005            # základní learning rate pro AdamW optimizer;
+                                   # decoder používá lr × 3 = 0.0015,
+                                   # SE extraktor používá lr × 0.1 = 0.00005
+  weight_decay: 0.0002             # L2 regularizace vah (pouze pro encoder skupiny);
+                                   # zabraňuje příliš velkým vahám → lepší generalizace
+
+  payload_weight: 1.0              # váha payload loss v celkové loss funkci;
+                                   # toto je hlavní cíl — správné dekódování bitů
+  mask_weight: 2.0                 # maximální váha mask_aware_loss (dosažena na epochě mask_start_epoch);
+                                   # 2.0 = ověřená hodnota — 3.0 blokuje konvergenci decoderu
+  sparsity_weight: 0.5             # váha sparsity loss — nutí masku pokrývat ~15 % snímku;
+                                   # zabraňuje masce být 1.0 všude (triviální řešení)
+  lambda_outside: 3.0              # kolikrát více penalizovat perturbace MIMO masku;
+
+
+  psnr_start_epoch: 15              # epocha od které se aktivuje PSNR penalizace;
+  target_psnr: 30.0                # cílové PSNR v dB; 30 dB = dobrá vizuální kvalita;
+  psnr_weight: 0.03                 # váha PSNR penalizace;
+
+
+  write_loss_threshold: 0.01       # minimální požadovaný průměrný |delta| (perturbace);
+
+  write_loss_weight: 2000.0        # síla write_loss penalizace;
+                                   # vysoká hodnota = encoder nesmí "kolabovat" na delta ≈ 0
+
+  mask_start_epoch: 5              # epocha kdy maska dosáhne plné síly (mask_weight = 2.0);
+                                   # 5 ep × 4250 = 21,250 kroků — dost času na základní učení
+                                   # než se maska začne plně vynucovat
+
+  batch_size: 1                      # počet snímků zpracovaných najednou
+                                   # 1 = online learning; vyšší hodnoty způsobují OOM na RTX 5060 8 GB
+  grad_clip: 1.0                   # maximální povolená norma gradientu (gradient clipping);
+                                   # zabraňuje exploding gradients — náhlým velkým skokům vah
+  use_amp: false                   # automatická smíšená přesnost (float16 + float32);
+                                   # false = trénujeme v čistém float32 (stabilnější)
+  log_interval: 1                  # každou epochu se vypíší statistiky do logu
+
+augmentation:
+  # Augmentace útoku — trénuje robustnost decoderu vůči degradaci stego snímku.
+  # Útok se aplikuje POUZE na stego snímek před decoderem, ne na originál.
+
+  attack_prob: 0.3                 # pravděpodobnost aplikace útoku na daný snímek;
+                                   # 0.3 = útok aplikován na 30 % snímků v každé epoše
+  attack_start_epoch: 5            # epocha od které se útoky začínají aplikovat;
+  attack_max_epoch: 20             # epocha kdy útoky dosáhnou maximální intenzity;
+
+  # JPEG komprese — nejdůležitější útok pro RTG snímky
+  # JPEG ničí vysokofrekvenční detaily kde steganografie ráda píše
+  jpeg_enabled: true
+  jpeg_quality_min: 85             # nejhorší JPEG kvalita při plné intenzitě útoku;
+  jpeg_quality_max: 95             # nejlepší JPEG kvalita (slabá komprese) — beze změny
+
+  # Gaussovský šum — simuluje šum RTG detektoru nebo přenosový šum
+  noise_enabled: false
+  noise_sigma_max: 0.015
+
+  # Gaussovské rozostření — simuluje mírné rozostření při tisku nebo zobrazení
+  blur_enabled: true
+  blur_strength_max: 0.25
+
+
+  # Změna jasu/kontrastu — simuluje windowing v DICOM prohlížečích
+  brightness_enabled: true
+  brightness_delta_max: 0.05       # maximální absolutní posun jasu při plné intenzitě;
+
+
+debug:
+  fixed_payload: false             # false = každý snímek má vlastní payload (hash PatientID);
+                                   # true = všechny snímky mají stejný payload "DEBUG_FIXED_PATIENT"
+  n_payloads: 0                    # 0 = produkční mód (každý snímek = unikátní payload);
+                                   # N > 0 = N různých payloadů cyklicky střídaných mezi snímky
+              
