@@ -135,8 +135,8 @@ Training logs and plots are written to `graphs/`.
 
 ### Pre-trained checkpoint
 
-A pre-trained checkpoint is available in [Releases](https://github.com/Hanty39/MedStegViT/releases/tag/v1.0).  
-Download [`ckpt_20260417_172607_best.pt`](https://github.com/Hanty39/MedStegViT/releases/download/v1.0/ckpt_20260417_172607_best.pt) (220 MB) and place it in the `checkpoints/` folder, then run:
+A pre-trained checkpoint is available in [Releases](https://github.com/Hanty39/MedStegViT/releases/tag/v2.0).  
+Download [`ckpt_20260417_172607_best.pt`] (220 MB) and place it in the `checkpoints/` folder, then run:
 
 ```bash
 python demo.py --checkpoint checkpoints/ckpt_20260417_172607_best.pt --rate 0.5
