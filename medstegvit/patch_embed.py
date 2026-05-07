@@ -21,15 +21,11 @@ class PatchEmbed(nn.Module):
         super().__init__()
         self.patch_size = patch_size
 
-        # Konvoluce s kernel_size=patch_size a stride=patch_size
-        # Efekt: každý patch_size×patch_size blok → jeden výstupní "pixel"
-        # Vstup: [B, embed_dim, H, W] → Výstup: [B, embed_dim, H/patch_size, W/patch_size]
-        # Počet parametrů: embed_dim × embed_dim × patch_size² (naučitelná projekce)
         self.proj = nn.Conv2d(
-            embed_dim,              # vstupní kanály
-            embed_dim,              # výstupní kanály (zachováváme dimenzi)
-            kernel_size=patch_size, # každý patch je patch_size × patch_size pixelů
-            stride=patch_size       # stride = patch_size → patche se nepřekrývají
+            embed_dim,
+            embed_dim,
+            kernel_size=patch_size,
+            stride=patch_size
         )
 
     def forward(self, x):
